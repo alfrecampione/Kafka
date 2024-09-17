@@ -1,5 +1,3 @@
-using System.Threading;
-using Confluent.Kafka;
 using Producer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,10 +27,6 @@ app.MapControllers();
 app.Run();
 
 
-var thread = new Thread(() => KafkaProducer.Start())
-{
-    IsBackground = true
-};
-thread.Start();
+var task = Task.Run(() => KafkaProducer.Start());
 
 

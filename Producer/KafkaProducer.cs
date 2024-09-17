@@ -1,8 +1,6 @@
 ﻿using Confluent.Kafka;
-using System;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Security.Cryptography;
 
 namespace Producer;
@@ -51,32 +49,36 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
         }
     }
 
+
     public static void Start()
     {
-        var producer = new KafkaProducer();
+        var producer = new KafkaProducer();  // Assume KafkaProducer is defined elsewhere
 
-        static void ActiveProducer(object? producer)
+        // Method that will be run as a task
+        static async Task ActiveProducer(KafkaProducer producer)
         {
-            if (producer == null)
-                producer = new KafkaProducer();
             try
             {
                 var systemTime = DateTime.UtcNow.ToString("o");
-                ((KafkaProducer)producer).ProduceEventsAsync(systemTime).Wait();
+                await producer.ProduceEventsAsync(systemTime);  // Use 'await' for asynchronous Kafka call
             }
-            catch
+            catch (Exception ex)
             {
-                throw new ArgumentException(nameof(producer));
+                Console.WriteLine($"Error occurred in producer: {ex.Message}");
+                throw;
             }
-
         }
 
-        while (true)
+        // Use Task.Run in an infinite loop to produce Kafka messages every second
+        Task.Run(async () =>
         {
-            var thread = new Thread(ActiveProducer);
-            thread.Start(producer);
-            Thread.Sleep(1000);
-        }
-
+            while (true)
+            {
+                await ActiveProducer(producer);  // Execute the ActiveProducer task
+                await Task.Delay(1000);  // Delay for 1 second before next execution
+            }
+        });
     }
+
+}
 }
