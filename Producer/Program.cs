@@ -1,3 +1,7 @@
+using System.Threading;
+using Confluent.Kafka;
+using Producer;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -23,3 +27,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+var thread = new Thread(() => KafkaProducer.Start())
+{
+    IsBackground = true
+};
+thread.Start();
+
+
