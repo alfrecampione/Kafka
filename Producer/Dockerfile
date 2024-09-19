@@ -27,4 +27,10 @@ RUN dotnet publish "./Producer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Set environment variables
+ENV BOOTSTRAP_SERVERS="your-kafka-host:9092"
+ENV TOPIC="your-topic-name"
+
 ENTRYPOINT ["dotnet", "Producer.dll"]
+

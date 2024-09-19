@@ -1,0 +1,31 @@
+services:
+  producer:
+    build: ./Producer  # Path to your Producer Dockerfile directory
+    ports:
+      - "8080:8080"  # Expose port 8080 from the container to the host
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092 # Connect to Kafka using the service name
+      TOPIC: quickstart-events
+
+  consumer:
+    build: ./Consumer  # Path to your Consumer Dockerfile directory
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092 
+      TOPIC: quickstart-events
+
+  kafka: 
+    image: apache/kafka:3.8.0
+    ports:
+      - "9092:9092" # Expose Kafka's port
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.1
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000

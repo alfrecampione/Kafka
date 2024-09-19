@@ -37,9 +37,9 @@ public class KafkaConsumer(string bootstrapServers = "localhost:9092", string to
             Console.WriteLine($"Error occurred: {e.Error.Reason}");
         }
     }
-    public static void Start()
+    public static void Start(string bootstrapServers, string topic)
     {
-        var consumer = new KafkaConsumer();
+        var consumer = new KafkaConsumer(bootstrapServers, topic);
         consumer.ConsumeEvent();
     }
 }

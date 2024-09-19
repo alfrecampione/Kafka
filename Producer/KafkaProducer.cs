@@ -50,9 +50,9 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
     }
 
 
-    public static void Start()
+    public static void Start(string bootstrapServers, string topic)
     {
-        var producer = new KafkaProducer();  // Assume KafkaProducer is defined elsewhere
+        var producer = new KafkaProducer(bootstrapServers, topic);  // Assume KafkaProducer is defined elsewhere
 
         // Method that will be run as a task
         static async Task ActiveProducer(KafkaProducer producer)
@@ -61,6 +61,8 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
             {
                 var systemTime = DateTime.UtcNow.ToString("o");
                 await producer.ProduceEventsAsync(systemTime);  // Use 'await' for asynchronous Kafka call
+                Console.WriteLine("Message sended");
+
             }
             catch (Exception ex)
             {
