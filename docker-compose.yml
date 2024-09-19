@@ -6,26 +6,32 @@ services:
     environment:
       BOOTSTRAP_SERVERS: kafka:9092 # Connect to Kafka using the service name
       TOPIC: quickstart-events
+    depends_on:
+      - kafka  # Ensure Kafka starts before the producer
 
   consumer:
     build: ./Consumer  # Path to your Consumer Dockerfile directory
     environment:
       BOOTSTRAP_SERVERS: kafka:9092 
       TOPIC: quickstart-events
+    depends_on:
+      - kafka  # Ensure Kafka starts before the consumer
 
-  kafka: 
+  kafka:
     image: apache/kafka:3.8.0
     ports:
       - "9092:9092" # Expose Kafka's port
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2182 
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper  # Ensure Zookeeper starts before Kafka
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.1
     ports:
-      - "2181:2181"
+      - "2182:2182"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000

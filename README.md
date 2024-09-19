@@ -16,3 +16,4 @@
 
 ```bash
 docker-compose down
+```

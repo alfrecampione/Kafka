@@ -1,22 +1,21 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 USER app
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
 
 
-# This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Consumer.csproj", "Consumer/"]
-RUN dotnet restore "./Consumer/Consumer.csproj"
-COPY . .
+RUN dotnet restore -v diag "Consumer/Consumer.csproj"
+
 WORKDIR "/src/Consumer"
-RUN dotnet build "./Consumer.csproj" -c $BUILD_CONFIGURATION -o /app/build
+COPY . .
+
+RUN dotnet build "Consumer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
@@ -29,7 +28,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Set environment variables
-ENV BOOTSTRAP_SERVERS="your-kafka-host:9092"
-ENV TOPIC="your-topic-name"
+ENV BOOTSTRAP_SERVERS="kafka:9092"
+ENV TOPIC="quickstart-events"
 
 ENTRYPOINT ["dotnet", "Consumer.dll"]
