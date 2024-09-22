@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace Producer;
 
-public class KafkaProducer(string bootstrapServers = "localhost:9092", string topic = "quickstart-events")
+public class KafkaProducer(IProducer<Null, string> producer, string topic = "quickstart-events")
 {
 
     public class MessagePayload
@@ -26,9 +26,6 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
     }
     public async Task ProduceEventsAsync(string message)
     {
-        var config = new ProducerConfig { BootstrapServers = bootstrapServers };
-
-        using var producer = new ProducerBuilder<Null, string>(config).Build();
         try
         { // Hora en formato ISO 8601
             var hash = GenerateSha256(message);
@@ -41,7 +38,8 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
 
             var sender = JsonSerializer.Serialize(payload);
             var result = await producer.ProduceAsync(topic, new Message<Null, string> { Value = sender });
-            Console.WriteLine($"Delivered '{result.Value}' to '{result.TopicPartitionOffset}'");
+            Console.WriteLine($"Delivered '{result.Value}' to '{result.Topic}'");
+            producer.Flush();
         }
         catch (ProduceException<Null, string> e)
         {
@@ -50,17 +48,22 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
     }
 
 
-    public static void Start(string bootstrapServers, string topic)
+    public static async void Start(string bootstrapServers, string topic)
     {
-        var producer = new KafkaProducer(bootstrapServers, topic);  // Assume KafkaProducer is defined elsewhere
+        var config = new ProducerConfig { BootstrapServers = bootstrapServers, AllowAutoCreateTopics = true };
+        using var producer = new ProducerBuilder<Null, string>(config).Build();
+
+        var my_producer = new KafkaProducer(producer, topic);
+
+        Console.WriteLine("New Producer started");
 
         // Method that will be run as a task
-        static async Task ActiveProducer(KafkaProducer producer)
+        async Task ActiveProducer()
         {
             try
             {
                 var systemTime = DateTime.UtcNow.ToString("o");
-                await producer.ProduceEventsAsync(systemTime);  // Use 'await' for asynchronous Kafka call
+                await my_producer.ProduceEventsAsync(systemTime);
                 Console.WriteLine("Message sended");
 
             }
@@ -70,16 +73,11 @@ public class KafkaProducer(string bootstrapServers = "localhost:9092", string to
                 throw;
             }
         }
-
-        // Use Task.Run in an infinite loop to produce Kafka messages every second
-        Task.Run(async () =>
+        int count = 0;
+        while (count++ < 1)
         {
-            while (true)
-            {
-                await ActiveProducer(producer);  // Execute the ActiveProducer task
-                await Task.Delay(1000);  // Delay for 1 second before next execution
-            }
-        });
+            ActiveProducer().Wait();  // Execute the ActiveProducer task
+            await Task.Delay(1000);  // Delay for 1 second before next execution
+        }
     }
-
 }

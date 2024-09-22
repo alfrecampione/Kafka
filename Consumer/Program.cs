@@ -7,7 +7,6 @@ class Program
         string topic = Environment.GetEnvironmentVariable("TOPIC") ?? "quickstart-events";
 
         Console.WriteLine("Consumer started");
-        var task = Task.Run(() => KafkaConsumer.Start(bootstrapServers, topic));
-
+        Task.Run(() => KafkaConsumer.Start(bootstrapServers, topic)).Wait();
     }
 }

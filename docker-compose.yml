@@ -1,37 +1,85 @@
 services:
-  producer:
-    build: ./Producer  # Path to your Producer Dockerfile directory
-    ports:
-      - "8080:8080"  # Expose port 8080 from the container to the host
-    environment:
-      BOOTSTRAP_SERVERS: kafka:9092 # Connect to Kafka using the service name
-      TOPIC: quickstart-events
-    depends_on:
-      - kafka  # Ensure Kafka starts before the producer
 
-  consumer:
-    build: ./Consumer  # Path to your Consumer Dockerfile directory
-    environment:
-      BOOTSTRAP_SERVERS: kafka:9092 
-      TOPIC: quickstart-events
-    depends_on:
-      - kafka  # Ensure Kafka starts before the consumer
-
-  kafka:
-    image: apache/kafka:3.8.0
-    ports:
-      - "9092:9092" # Expose Kafka's port
-    environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2182 
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    depends_on:
-      - zookeeper  # Ensure Zookeeper starts before Kafka
-
-  zookeeper:
+  zookeeper:  # Single ZooKeeper instance
     image: confluentinc/cp-zookeeper:7.3.1
     ports:
-      - "2182:2182"
+      - "2181:2181"
+    expose:
+      - "2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+
+  kafka1:
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka1:9092,OUTSIDE://localhost:9202
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9202
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_BROKER_ID: 1 
+    hostname: kafka1
+    image: confluentinc/cp-kafka
+    restart: always
+    ports:
+      - "9202:9202"
+    expose:
+      - "9202"
+
+  kafka2:
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka2:9092,OUTSIDE://localhost:9203
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9203
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_BROKER_ID: 2
+    hostname: kafka2
+    image: confluentinc/cp-kafka
+    restart: always
+    ports:
+      - "9203:9203"
+    expose:
+      - "9203"
+
+  kafka3:
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka3:9092,OUTSIDE://localhost:9204
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9204
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_BROKER_ID: 3
+    hostname: kafka3
+    image: confluentinc/cp-kafka
+    restart: always
+    ports:
+      - "9204:9204"
+    expose:
+      - "9204"  
+  # kafka-init:
+  #   image: confluentinc/cp-kafka
+  #   command: >
+  #     kafka-topics --bootstrap-server ${BOOTSTRAP_SERVERS} --create --topic ${TOPIC} --partitions 1 --replication-factor 1
+
+  producer:
+    build: ./Producer
+    environment:
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      TOPIC: ${TOPIC}
+    depends_on:
+      - kafka3
+
+  consumer:
+    build: ./Consumer
+    environment:
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      TOPIC: ${TOPIC}
+    depends_on:
+      - kafka3
